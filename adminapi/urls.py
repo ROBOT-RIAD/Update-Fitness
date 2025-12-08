@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from workout.views import AdminWorkoutBulkUploadAPIView, AdminWorkoutCreateAPIView,AdminWorkoutUpdateAPIView,AdminWorkoutListAPIView,AdminWorkoutRetrieveAPIView,AdminWorkoutDeleteAPIView
-from meal.views import AdminMealRetrieveAPIView, AdminMealcreateApiview,AdminMealUpdateApiview,AdminMealDeleteAPIView,AdminMealListAPIView
+from meal.views import AdminMealBulkUploadAPIView, AdminMealRetrieveAPIView, AdminMealcreateApiview,AdminMealUpdateApiview,AdminMealDeleteAPIView,AdminMealListAPIView
 
 
 
@@ -19,7 +19,7 @@ urlpatterns = [
     path('workout/<int:pk>',AdminWorkoutUpdateAPIView.as_view(),name="update-workout"),
     path('workout/<int:pk>/', AdminWorkoutRetrieveAPIView.as_view(), name='admin-workout-retrieve'),
     path('workout/delete/<int:pk>/', AdminWorkoutDeleteAPIView.as_view(), name='admin-workout-delete'),
-    path('admin/workouts/bulk-upload/', AdminWorkoutBulkUploadAPIView.as_view(), name='admin-workout-bulk-upload'),
+    path('workouts/bulk-upload/', AdminWorkoutBulkUploadAPIView.as_view(), name='admin-workout-bulk-upload'),
 
 
     path('meal/',AdminMealcreateApiview.as_view(),name ='create-meal'),
@@ -27,5 +27,6 @@ urlpatterns = [
     path('meal/<int:pk>/', AdminMealRetrieveAPIView.as_view(), name='admin-meal-retrieve'),
     path('meal/<int:pk>', AdminMealUpdateApiview.as_view(), name='admin-meal-update'),
     path('meal/delete/<int:pk>/', AdminMealDeleteAPIView.as_view(), name='admin-meal-delete'),
+    path('meals/bulk-upload/', AdminMealBulkUploadAPIView.as_view(), name='admin-meal-bulk-upload'),
 
 ]

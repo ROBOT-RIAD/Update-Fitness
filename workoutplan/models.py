@@ -5,6 +5,8 @@ from datetime import date
 
 # Create your models here.
 
+
+
 class UserWorkoutFQA(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_workout_fqas')
     session_duration = models.CharField(max_length=100, blank=True, null=True, help_text="Preferred session length, e.g., 30 min, 1 hour")
@@ -43,7 +45,6 @@ class UserWorkoutFQA(models.Model):
 
 
 
-
 class WorkoutPlan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workout_plans')
     fqa = models.OneToOneField(UserWorkoutFQA, on_delete=models.CASCADE, related_name='workout_plan', blank=True, null=True)
@@ -73,7 +74,6 @@ class WorkoutPlan(models.Model):
 
 
 
-
 class DailyWorkout(models.Model):
     workout_plan = models.ForeignKey(WorkoutPlan, on_delete=models.CASCADE, related_name='daily_workouts')
     date = models.DateField()
@@ -82,7 +82,6 @@ class DailyWorkout(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-
 
 
 

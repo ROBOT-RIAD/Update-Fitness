@@ -2,6 +2,8 @@ from django.db import models
 from accounts.models import User
 from datetime import date
 from meal.models import Meal
+from .constants import SLOT_CHOICES
+
 
 # Create your models here.
 
@@ -36,6 +38,8 @@ class UserMealFQA(models.Model):
 
 
 
+
+
 class MealPlan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='meal_plans')
     fqa = models.OneToOneField(UserMealFQA, on_delete=models.CASCADE, related_name='meal_plan', blank=True, null=True)
@@ -65,6 +69,7 @@ class MealPlan(models.Model):
 
 
 
+
 class DailyMeal(models.Model):
     meal_plan = models.ForeignKey(MealPlan, on_delete=models.CASCADE, related_name='daily_meals')
     date = models.DateField()
@@ -78,30 +83,57 @@ class DailyMeal(models.Model):
 
 
 
+class MealSlot(models.Model):
+    daily_meal = models.ForeignKey(DailyMeal, on_delete=models.CASCADE, related_name='meal_slots')
+    slot_type = models.CharField(max_length=20, choices=SLOT_CHOICES)
+    completed = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
 
-class MealEntry(models.Model):
-    daily_meal = models.ForeignKey(DailyMeal, on_delete=models.CASCADE, related_name='meals')
+
+
+
+
+class MealSlotEntry(models.Model):
+    """Each MealSlot can have multiple food items (Meal)."""
+    meal_slot = models.ForeignKey(MealSlot, on_delete=models.CASCADE, related_name='entries')
     meal = models.ForeignKey(Meal, on_delete=models.SET_NULL, null=True, blank=True)
-    completed = models.BooleanField(default=False, help_text="Mark if the meal was eaten")
-    
+    completed = models.BooleanField(default=False)
+
+    grams = models.FloatField(default=0.0, help_text="Total weight of the meal in grams")
+    calories = models.FloatField(default=0.0, help_text="Total calories in kcal")
+    protein_g = models.FloatField(default=0.0, help_text="Protein content in grams")
+    fat_g = models.FloatField(default=0.0, help_text="Fat content in grams")
+    carbs_g = models.FloatField(default=0.0, help_text="Carbohydrate content in grams")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        """Auto-update daily completion status when all meals are done."""
+        """Update completion status automatically."""
         super().save(*args, **kwargs)
 
-        all_completed = self.daily_meal.meals.filter(completed=False).count() == 0
-        if all_completed and not self.daily_meal.completed:
-            self.daily_meal.completed = True
-            self.daily_meal.save()
-        elif not all_completed and self.daily_meal.completed:
-            self.daily_meal.completed = False
-            self.daily_meal.save()
+        # Update slot completion
+        slot = self.meal_slot
+        all_completed = slot.entries.filter(completed=False).count() == 0
+        if all_completed and not slot.completed:
+            slot.completed = True
+            slot.save()
+        elif not all_completed and slot.completed:
+            slot.completed = False
+            slot.save()
+
+        # Update daily completion
+        daily = slot.daily_meal
+        all_slots_completed = daily.meal_slots.filter(completed=False).count() == 0
+        if all_slots_completed and not daily.completed:
+            daily.completed = True
+            daily.save()
+        elif not all_slots_completed and daily.completed:
+            daily.completed = False
+            daily.save()
 
     def __str__(self):
-        return f"{self.meal} - {self.daily_meal.date}"
+        return f"{self.meal} - {self.meal_slot.get_slot_type_display()} ({self.meal_slot.daily_meal.date})"
     
 
 

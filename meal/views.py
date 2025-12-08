@@ -6,6 +6,8 @@ from .models import Meal
 from .serializers import MealCreateAndUpdateSerializer, MealSerializer
 from accounts.permissions import IsAdminRole
 from accounts.translations import translate_text
+from django.db import IntegrityError
+import json
 
 
 # Create your views here.
@@ -16,6 +18,9 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.parsers import MultiPartParser,FormParser
 
+
+
+
 class AdminMealcreateApiview(APIView):
     permission_classes =[permissions.IsAuthenticated]
     parser_classes = (MultiPartParser , FormParser)
@@ -24,7 +29,6 @@ class AdminMealcreateApiview(APIView):
         operation_description="Create a new Meal (Admin only create)",
         manual_parameters=[
             openapi.Parameter('category',openapi.IN_FORM ,type = openapi.TYPE_STRING,description='category'),
-            openapi.Parameter('subcategory',openapi.IN_FORM ,type = openapi.TYPE_STRING,description='subcategory'),
             openapi.Parameter('food_name',openapi.IN_FORM ,type = openapi.TYPE_STRING,description='food_name'),
             openapi.Parameter('lean', openapi.IN_QUERY, type=openapi.TYPE_STRING, description="Language code (default: EN)", default='EN'),
         ],
@@ -36,19 +40,15 @@ class AdminMealcreateApiview(APIView):
         
         if lean != 'EN' :
             data['category_spanish'] = data.get('category')
-            data['subcategory_spanish'] = data.get('subcategory')
             data['food_name_spanish'] = data.get('food_name')
 
             data['category'] = translate_text(data.get('category'),'EN')
-            data['subcategory'] = translate_text(data.get('subcategory'),'EN')
             data['food_name'] = translate_text(data.get('food_name'),'EN')
         else:
             data['category'] = data.get('category')
-            data['subcategory'] = data.get('subcategory')
             data['food_name'] = data.get('food_name')
 
             data['category_spanish'] = translate_text(data.get('category'),'ES')
-            data['subcategory_spanish'] = translate_text(data.get('subcategory'),'ES')
             data['food_name_spanish'] = translate_text(data.get('food_name'),'ES')
 
         
@@ -62,7 +62,6 @@ class AdminMealcreateApiview(APIView):
                 result ={
                     "id" : data['id'],
                     'category' : data['category_spanish'],
-                    'subcategory'  : data['subcategory_spanish'],
                     'food_name' : data['food_name_spanish'],
                     "image": data['image'],
                 }
@@ -70,7 +69,6 @@ class AdminMealcreateApiview(APIView):
                 result ={
                     "id" : data['id'],
                     'category' : data['category'],
-                    'subcategory'  : data['subcategory'],
                     'food_name' : data['food_name'],
                     "image": data['image'],
                 }
@@ -90,7 +88,6 @@ class AdminMealUpdateApiview(APIView):
         manual_parameters=[
             openapi.Parameter('id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Meal ID'),
             openapi.Parameter('category', openapi.IN_FORM, type=openapi.TYPE_STRING, description='category'),
-            openapi.Parameter('subcategory', openapi.IN_FORM, type=openapi.TYPE_STRING, description='subcategory'),
             openapi.Parameter('food_name', openapi.IN_FORM, type=openapi.TYPE_STRING, description='food_name'),
             openapi.Parameter('lean', openapi.IN_QUERY, type=openapi.TYPE_STRING, description="Language code (default: EN)", default='EN'),
         ],
@@ -111,17 +108,12 @@ class AdminMealUpdateApiview(APIView):
             if 'category' in data:
                 data['category_spanish'] = data.get('category')
                 data['category'] = translate_text(data.get('category'), 'EN')
-            if 'subcategory' in data:
-                data['subcategory_spanish'] = data.get('subcategory')
-                data['subcategory'] = translate_text(data.get('subcategory'), 'EN')
             if 'food_name' in data:
                 data['food_name_spanish'] = data.get('food_name')
                 data['food_name'] = translate_text(data.get('food_name'), 'EN')
         else:
             if 'category' in data:
                 data['category_spanish'] = translate_text(data.get('category'), 'ES')
-            if 'subcategory' in data:
-                data['subcategory_spanish'] = translate_text(data.get('subcategory'), 'ES')
             if 'food_name' in data:
                 data['food_name_spanish'] = translate_text(data.get('food_name'), 'ES')
 
@@ -135,7 +127,6 @@ class AdminMealUpdateApiview(APIView):
                 result ={
                     "id" : data['id'],
                     'category' : data['category_spanish'],
-                    'subcategory'  : data['subcategory_spanish'],
                     'food_name' : data['food_name_spanish'],
                     "image": data['image'],
                 }
@@ -143,7 +134,6 @@ class AdminMealUpdateApiview(APIView):
                 result ={
                     "id" : data['id'],
                     'category' : data['category'],
-                    'subcategory'  : data['subcategory'],
                     'food_name' : data['food_name'],
                     "image": data['image'],
                 }
@@ -176,7 +166,6 @@ class AdminMealListAPIView(APIView):
                 result.append({
                     "id": item['id'],
                     'category': item['category_spanish'],
-                    'subcategory': item['subcategory_spanish'],
                     'food_name': item['food_name_spanish'],
                     "image": item['image'],
                 })
@@ -184,7 +173,6 @@ class AdminMealListAPIView(APIView):
                 result.append({
                     "id": item['id'],
                     'category': item['category'],
-                    'subcategory': item['subcategory'],
                     'food_name': item['food_name'],
                     "image": item['image'],
                 })
@@ -220,7 +208,6 @@ class AdminMealRetrieveAPIView(APIView):
             result = {
                 "id": data['id'],
                 'category': data['category_spanish'],
-                'subcategory': data['subcategory_spanish'],
                 'food_name': data['food_name_spanish'],
                 "image": data['image'],
             }
@@ -228,7 +215,6 @@ class AdminMealRetrieveAPIView(APIView):
             result = {
                 "id": data['id'],
                 'category': data['category'],
-                'subcategory': data['subcategory'],
                 'food_name': data['food_name'],
                 "image": data['image'],
             }
@@ -257,5 +243,102 @@ class AdminMealDeleteAPIView(APIView):
         meal_instance.delete()
         return Response({"detail": "Meal deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
+
+
+
+class AdminMealBulkUploadAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
+
+    @swagger_auto_schema(
+        operation_description="""
+        Bulk upload Meals via JSON file (Admin only)
+        Example JSON:
+        [
+            {"food": "PRESS BANCA", "category": "Protein"},
+            {"food": "PRESS PLANO EN MÁQUINA", "category": "Chest"}
+        ]
+        """,
+        manual_parameters=[
+            openapi.Parameter(
+                'file',
+                openapi.IN_FORM,
+                type=openapi.TYPE_FILE,
+                description='JSON file containing Meal data'
+            ),
+            openapi.Parameter(
+                'lean',
+                openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
+                description="Language code (default: EN)",
+                default='EN'
+            ),
+        ],
+        tags=['Admin Meal'],
+    )
+    def post(self, request, *args, **kwargs):
+        # Get language and file
+        lean = request.query_params.get('lean', 'EN').upper()
+        uploadfile = request.FILES.get('file')
+
+        if not uploadfile:
+            return Response({"error": "Please upload a JSON file"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Parse uploaded JSON
+        try:
+            data = json.loads(uploadfile.read().decode('utf-8'))
+        except json.JSONDecodeError:
+            return Response({"error": "Invalid JSON file"}, status=status.HTTP_400_BAD_REQUEST)
+
+        created_meals = []
+        errors = []
+
+        for item in data:
+            try:
+                food_name = item.get('food')
+                category = item.get('category')
+
+                if not food_name or not category:
+                    errors.append({"item": item, "error": "Missing required fields"})
+                    continue
+
+                # Prepare meal data
+                meal_data = {
+                    'food_name': food_name,
+                    'category': category,
+                }
+
+                # Handle translation
+                if lean != 'EN':
+                    meal_data['category_spanish'] = category
+                    meal_data['food_name_spanish'] = food_name
+                    meal_data['category'] = translate_text(category, 'EN')
+                    meal_data['food_name'] = translate_text(food_name, 'EN')
+                else:
+                    meal_data['category_spanish'] = translate_text(category, 'ES')
+                    meal_data['food_name_spanish'] = translate_text(food_name, 'ES')
+
+                # Serialize and save
+                serializer = MealCreateAndUpdateSerializer(data=meal_data)
+                if serializer.is_valid():
+                    meal_instance = serializer.save()
+                    created_meals.append(meal_instance)
+                else:
+                    errors.append(serializer.errors)
+
+            except IntegrityError:
+                errors.append({"food": item.get("food"), "error": "Meal already exists."})
+            except Exception as e:
+                errors.append({"food": item.get("food"), "error": str(e)})
+
+        # Serialize created meal instances for JSON response
+        created_data = MealCreateAndUpdateSerializer(created_meals, many=True).data
+
+        return Response({
+            "created_count": len(created_meals),
+            "error_count": len(errors),
+            "created_meals": created_data,
+            "errors": errors,
+        }, status=status.HTTP_201_CREATED)
 
 

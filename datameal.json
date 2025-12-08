@@ -1,0 +1,86 @@
+[
+    {
+        "category": "PRE-ENTRENO",
+        "food": "Arroz blanco (hervir)"
+    },
+    {
+        "category": "PRE-ENTRENO",
+        "food": "Pechuga de pollo(hervir o a la plancha)"
+    },
+    {
+        "category": "PRE-ENTRENO",
+        "food": "Mel\u00f3n"
+    },
+    {
+        "category": "PRE-ENTRENO",
+        "food": "Batido de proteinas whey"
+    },
+    {
+        "category": "POST-ENTRENO",
+        "food": "Batido de proteinas ISO"
+    },
+    {
+        "category": "POST-ENTRENO",
+        "food": "Pl\u00e1tano"
+    },
+    {
+        "category": "POST-ENTRENO",
+        "food": "Tortitas de arroz con sal"
+    },
+    {
+        "category": "1",
+        "food": "Copos de avena(hervir o al microondas)"
+    },
+    {
+        "category": "1",
+        "food": "Clara de huevo(hervir, micro o plancha)"
+    },
+    {
+        "category": "1",
+        "food": "Yema de huevo(hervir o a la plancha)"
+    },
+    {
+        "category": "1",
+        "food": "Crema de cacahuete"
+    },
+    {
+        "category": "2",
+        "food": "Arroz blanco (hervir)"
+    },
+    {
+        "category": "2",
+        "food": "Pechuga de pollo(hervir o a la plancha)"
+    },
+    {
+        "category": "2",
+        "food": "Aguacate(en crudo)"
+    },
+    {
+        "category": "2",
+        "food": "Mezcla de verduras(asar o a la plancha)"
+    },
+    {
+        "category": "3",
+        "food": "Patata(al vapor, hervir o asada)"
+    },
+    {
+        "category": "3",
+        "food": "Merluza(hervir, plancha o asada)"
+    },
+    {
+        "category": "3",
+        "food": "Aceite de oliva(en crudo)"
+    },
+    {
+        "category": "3",
+        "food": "Mezcla de verduras(asar o a la plancha)"
+    },
+    {
+        "category": "4",
+        "food": "Kefir"
+    },
+    {
+        "category": "4",
+        "food": "Arandanos"
+    }
+]

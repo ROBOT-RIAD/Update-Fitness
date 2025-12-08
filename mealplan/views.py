@@ -2,10 +2,16 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .models import UserMealFQA
+from .models import MealPlan, UserMealFQA , DailyMeal, MealSlot, MealSlotEntry
 from meal.models import Meal
 from accounts.models import Profile
 from accounts.translations import translate_text
+from datetime import date,timedelta
+from .serializers import MealPlanSerializer,UserMealFQASerializer
+from meal.serializers import MealSerializer
+from workoutplan.serializers import WorkoutPlanSerializer
+from workoutplan.models import WorkoutPlan
+from .service import init_mealplan
 
 
 
@@ -19,7 +25,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class GenerateMealPlan(APIView):
-
     permission_classes = [ permissions.IsAuthenticated]
     parser_classes = (MultiPartParser , FormParser)
 
@@ -82,7 +87,7 @@ class GenerateMealPlan(APIView):
 
         profile_json = {
             "gender": profile.gender,
-            "date_of_birth": profile.date_of_birth,
+            "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
             "weight": profile.weight,
             "height": profile.height,
             "injuries_discomfort": profile.injuries_discomfort,
@@ -94,7 +99,7 @@ class GenerateMealPlan(APIView):
 
         if lean != 'EN':
             fqadata = {
-                "user" : user.id,
+                "user" : user,
                 
                 "profile_json" : profile_json,
 
@@ -119,7 +124,7 @@ class GenerateMealPlan(APIView):
         else:
             fqadata = {
 
-                "user" : user.id,
+                "user" : user,
                 "profile_json" : profile_json,
 
                 #english
@@ -141,11 +146,92 @@ class GenerateMealPlan(APIView):
                 "skipped_spanish": translate_text(data.get("skipped"),'ES'),
             }
         
-        # fqa = UserMealFQA.objects.create(**fqadata)
+        fqa = UserMealFQA.objects.create(**fqadata)
+
+
+        start_date = date.today()
+        end_date = start_date + timedelta(days=15)
+
+        mealplan = MealPlan.objects.create(
+            user=user,
+            fqa=fqa,
+            start_date=start_date,
+            end_date=end_date,
+            meal_plan_name="15 Days meal Plan",
+            meal_plan_name_spanish="15 días de entrenamiento"
+        )
+
+        mealplan_data = MealPlanSerializer(mealplan).data
+        fwq_data = UserMealFQASerializer(fqa).data
+
+        all_meals = Meal.objects.all()
+        meal_data = MealSerializer(all_meals, many = True).data
+
+        active_workout_plan = (
+            WorkoutPlan.objects
+            .filter(user=user, is_completed=False, is_cancelled=False)
+            .prefetch_related('daily_workouts__workouts__workout')
+            .first()
+        )
+        active_workout_plan_data = WorkoutPlanSerializer(active_workout_plan).data or {}
+
+        openaidata = {
+            "fqa": fwq_data,
+            "Mealplan": mealplan_data,
+            "Active_Workout_Plan": active_workout_plan_data,
+            "Meal_data": meal_data,
+        }
+
+        DailyMeal_MealEntry_data = init_mealplan(openaidata)
 
 
 
+        for i in range(15):
+            day_date = date.today() + timedelta(days=i)
+            daily_meal = DailyMeal.objects.create(
+                meal_plan=mealplan,
+                date=day_date,
+                completed=False,
+            )
 
+            # Create slots for that day
+            for slot_data in DailyMeal_MealEntry_data:
+                slot_type = slot_data["meal_plan"].lower()
+                meal_slot = MealSlot.objects.create(
+                    daily_meal=daily_meal,
+                    slot_type=slot_type,
+                    completed=False,
+                )
 
-        return Response(fqadata)
+                # Create entries inside each slot
+                for meal_entry in slot_data["meals"]:
+
+                    meal_id = meal_entry["meal"]
+
+                    if not Meal.objects.filter(id=meal_id).exists():
+                        print(f"⚠️ Skipping missing meal ID: {meal_id}")
+                        continue
+
+                    MealSlotEntry.objects.create(
+                        meal_slot=meal_slot,
+                        meal_id=meal_entry["meal"],
+                        grams=meal_entry.get("grams", 0),
+                        calories=meal_entry.get("calories", 0),
+                        protein_g=meal_entry.get("protein_g", 0),
+                        fat_g=meal_entry.get("fat_g", 0),
+                        carbs_g=meal_entry.get("carbs_g", 0),
+                        completed=False,
+                    )
+            
+        result= ''
+        if lean != 'EN':
+            result = "Plan de comidas creado con éxito"
+        else:
+            result = "Meal Plan Created Successfully"
+
+        return Response({
+            "message": result,
+            "meal_plan_id": mealplan.id,
+            "days_created": 15,
+        })
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Profile
+from .models import User, Profile,AISuggestData
 
 # Register your models here.
 
@@ -80,5 +80,14 @@ class ProfileAdmin(admin.ModelAdmin):
     list_filter = ("gender", "gender_spanish")
 
 
+
+
+@admin.register(AISuggestData)
+class AISuggestDataAdmin(admin.ModelAdmin):
+    list_display = ('user', 'calorie_need_daily', 'water_liter', 'sleep_duration', 'created_at')
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('created_at',)
+
+    
 
     

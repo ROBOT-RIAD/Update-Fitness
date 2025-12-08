@@ -58,4 +58,16 @@ class Profile(models.Model):
 
 
 
+class AISuggestData(models.Model):
+    user = models.OneToOneField(User,on_delete=models.CASCADE,related_name='ai_suggest_data',null=True,blank=True)
+    calorie_need_daily = models.PositiveIntegerField(help_text="Daily calorie need in Kcal")
+    water_liter = models.FloatField(help_text="Daily water intake recommendation in liters")
+    sleep_duration = models.DurationField(help_text="Total recommended sleep duration")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"AI Suggestion for {self.user} on {self.created_at.date()}"
+
+
+
     

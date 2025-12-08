@@ -7,6 +7,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .translations import translate_text
 from rest_framework.exceptions import ValidationError
+from .models import AISuggestData
+from .service import AISuggestData_get
+from datetime import datetime, timedelta
+
 
 
 
@@ -262,6 +266,27 @@ class ProfileUpdateAPIView(APIView):
                     "allergies": data.get("allergies"),
                     "medical_conditions": data.get("medical_conditions"),
                 }
+
+            # ai_result = AISuggestData_get(
+            #         date_of_birth = profile.date_of_birth,
+            #         weight = profile.weight,
+            #         height = profile.height,
+            #         gender = profile.gender,
+            #         trainer = profile.trainer,
+            #         fitness_goals = profile.fitness_goals,
+            #         injuries_discomfort = profile.injuries_discomfort,
+            #         dietary_preferences = profile.dietary_preferences,
+            #         allergies = profile.allergies,
+            #         medical_conditions = profile.medical_conditions
+            # )
+
+            # # ai_result is a UserProfile model output (water_intake, sleep_hours, calorie_goal)
+
+            # ais_data, _ = AISuggestData.objects.get_or_create(user=request.user)
+            # ais_data.calorie_need_daily = ai_result.calorie_goal
+            # ais_data.water_liter = ai_result.water_intake
+            # ais_data.sleep_duration = timedelta(hours=float(ai_result.sleep_hours))
+            # ais_data.save()
             return Response(result, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

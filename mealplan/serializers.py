@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserMealFQA
+from .models import UserMealFQA , MealPlan
 
 
 
@@ -42,5 +42,18 @@ class UserMealFQASerializer(serializers.ModelSerializer):
             'training_environment_spanish', 'preferences_spanish', 'skipped_spanish',
             'profile_json'
         ]
+
+
+
+
+class MealPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MealPlan
+        fields = [
+            'id', 'user', 'fqa', 'start_date', 'end_date', 'is_completed',
+            'is_cancelled', 'meal_plan_name', 'meal_plan_name_spanish',
+            'created_at', 'updated_at'
+        ]
+
 
 

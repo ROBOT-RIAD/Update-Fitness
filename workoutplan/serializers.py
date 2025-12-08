@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from workoutplan.models import UserWorkoutFQA,WorkoutPlan
+from workoutplan.models import DailyWorkout, UserWorkoutFQA,WorkoutPlan,WorkoutEntry
+from workout.serializers import WorkoutSerializer
 
 
 class UserWorkoutFQASerializer(serializers.ModelSerializer):
@@ -47,7 +48,29 @@ class UserWorkoutFQASerializer(serializers.ModelSerializer):
 
 
 
+
+class WorkoutEntrySerializer(serializers.ModelSerializer):
+    workout = WorkoutSerializer()
+
+    class Meta:
+        model = WorkoutEntry
+        fields = '__all__'
+
+
+class DailyWorkoutSerializer(serializers.ModelSerializer):
+    workouts = WorkoutEntrySerializer(many=True)
+
+    class Meta:
+        model = DailyWorkout
+        fields = '__all__'
+
+
 class WorkoutPlanSerializer(serializers.ModelSerializer):
+    daily_workouts = DailyWorkoutSerializer(many=True)
+
     class Meta:
         model = WorkoutPlan
         fields = '__all__'
+
+
+

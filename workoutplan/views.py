@@ -113,7 +113,7 @@ class GenarateWorkoutPlan(APIView):
 
         profile_json = {
             "gender": profile.gender,
-            "date_of_birth": profile.date_of_birth,
+            "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
             "weight": profile.weight,
             "height": profile.height,
             "injuries_discomfort": profile.injuries_discomfort,
@@ -250,8 +250,15 @@ class GenarateWorkoutPlan(APIView):
                     completed=False
                 )
 
+        result = ''
+        
+        if lean != 'EN':
+            result = "Plan de entrenamiento creado con éxito"
+        else:
+            result = "Workout Plan Created Successfully"
+
         return Response({
-            "message": "Workout plan created successfully",
+            "message": result,
         }, status=status.HTTP_201_CREATED)
 
 
