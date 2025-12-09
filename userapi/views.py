@@ -7,7 +7,6 @@ from meal.models import Meal
 from datetime import datetime, date
 from workoutplan.models import WorkoutPlan
 
-
 # swagger 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -156,8 +155,6 @@ class GetHomePageData(APIView):
 
 
 
-
-
 class GenaratPageData(APIView):
     permission_classes=[permissions.IsAuthenticated]
     @swagger_auto_schema(
@@ -258,8 +255,217 @@ class GenaratPageData(APIView):
         }
 
 
-        
 
+
+class AllMealPlanGet(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'mealplan_id',
+                openapi.IN_QUERY,
+                description="ID of the meal plan to retrieve",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+            openapi.Parameter(
+                'lean',
+                openapi.IN_QUERY,
+                description="Language code for translation (default is 'EN')",
+                type=openapi.TYPE_STRING,
+                default='EN'
+            ),
+        ],
+        tags=['15 days Mealplan get API']
+    )
+    def get(self, request):
+        user = request.user
+        mealplan_id = request.query_params.get("mealplan_id")
+        lean = request.query_params.get("lean", "EN").upper()
+
+        if not mealplan_id:
+            return Response(
+                {"error": "mealplan_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            meal_plan = MealPlan.objects.get(id=mealplan_id, user=user)
+        except MealPlan.DoesNotExist:
+            return Response(
+                {"error": "Meal plan not found for this user."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        daily_meals = (
+            meal_plan.daily_meals
+            .prefetch_related("meal_slots__entries__meal")
+            .order_by("date")
+        )
+
+        data = []
+        total_calories = 0
+        total_meals = 0
+
+        for daily in daily_meals:
+            day_meals = []
+            day_calories = 0
+            for slot in daily.meal_slots.all():
+                for entry in slot.entries.all():
+                    meal_name = (
+                        entry.meal.food_name_spanish
+                        if lean == "ES" else entry.meal.food_name
+                    ) if entry.meal else None
+
+                    day_calories += entry.calories or 0
+                    total_meals += 1
+
+                    day_meals.append({
+                        "slot_id": slot.id,
+                        "slot_type": slot.slot_type,
+                        "meal_slot_entry_id": entry.id,
+                        "grams": entry.grams,
+                        "calories": entry.calories,
+                        "protein_g": entry.protein_g,
+                        "fat_g": entry.fat_g,
+                        "carbs_g": entry.carbs_g,
+                        "completed": entry.completed,
+                        "meal_id": entry.meal.id if entry.meal else None,
+                        "meal_name": meal_name,
+                        "image": entry.meal.image.url if entry.meal and entry.meal.image and hasattr(entry.meal.image, 'url') else None
+                    })
+            total_calories += day_calories
+
+
+            data.append({
+                "DailyMeal_id":daily.id,
+                "date": daily.date,
+                "this_day_meal": day_meals
+            })
+        data = data[:15]
+
+        total_days = len(data)
+        avg_calories = total_calories / total_days if total_days > 0 else 0
+
+        response_data = {
+            "status": {
+                "total_day": total_days,
+                "average_per_day_calorie": round(avg_calories, 2),
+                "total_meal": total_meals,
+            },
+            "data": data
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+
+class DailyMealwisedataget(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'daily_id',
+                openapi.IN_QUERY,
+                description="ID of the DailyMeal to retrieve",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+            openapi.Parameter(
+                'lean',
+                openapi.IN_QUERY,
+                description="Language code for translation (default is 'EN')",
+                type=openapi.TYPE_STRING,
+                default='EN'
+            ),
+        ],
+        tags=['Daily Meal Wise Data Get API']
+    )
+    def get(self, request):
+        user = request.user
+        daily_id = request.query_params.get("daily_id")
+        lean = request.query_params.get("lean", "EN").upper()
+
+        # ✅ Validate required parameter
+        if not daily_id:
+            return Response(
+                {"error": "daily_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ✅ Find the DailyMeal
+        try:
+            daily_meal = DailyMeal.objects.select_related("meal_plan__user").prefetch_related(
+                "meal_slots__entries__meal"
+            ).get(id=daily_id, meal_plan__user=user)
+        except DailyMeal.DoesNotExist:
+            return Response(
+                {"error": "Daily meal not found for this user."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # ✅ Build response data
+        day_meals = []
+        total_calories = 0
+        total_protein = 0
+        total_fat = 0
+        total_carbs = 0
+        total_meals = 0
+
+        for slot in daily_meal.meal_slots.all():
+            for entry in slot.entries.all():
+                if not entry.meal:
+                    continue
+
+                meal_name = (
+                    entry.meal.food_name_spanish
+                    if lean == "ES" else entry.meal.food_name
+                )
+
+                image_url = (
+                    entry.meal.image.url
+                    if entry.meal.image and hasattr(entry.meal.image, "url")
+                    else None
+                )
+
+                # ✅ Totals
+                total_calories += entry.calories or 0
+                total_protein += entry.protein_g or 0
+                total_fat += entry.fat_g or 0
+                total_carbs += entry.carbs_g or 0
+                total_meals += 1
+
+                day_meals.append({
+                    "slot_id": slot.id,
+                    "slot_type": slot.slot_type,
+                    "meal_slot_entry_id": entry.id,
+                    "grams": entry.grams,
+                    "calories": entry.calories,
+                    "protein_g": entry.protein_g,
+                    "fat_g": entry.fat_g,
+                    "carbs_g": entry.carbs_g,
+                    "completed": entry.completed,
+                    "meal_id": entry.meal.id,
+                    "meal_name": meal_name,
+                    "image": image_url
+                })
+
+        response_data = {
+            "status": {
+                "date": daily_meal.date,
+                "this_day_total_calories": round(total_calories, 2),
+                "this_day_total_protein": round(total_protein, 2),
+                "this_day_total_fat": round(total_fat, 2),
+                "this_day_total_carbs": round(total_carbs, 2),
+            },
+            "data": {
+                "this_day_meal": day_meals,
+            }
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    
 
 
 
