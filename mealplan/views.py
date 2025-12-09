@@ -12,6 +12,7 @@ from meal.serializers import MealSerializer
 from workoutplan.serializers import WorkoutPlanSerializer
 from workoutplan.models import WorkoutPlan
 from .service import init_mealplan
+from datetime import datetime, date
 
 
 
@@ -234,4 +235,7 @@ class GenerateMealPlan(APIView):
             "meal_plan_id": mealplan.id,
             "days_created": 15,
         })
+
+
+
 

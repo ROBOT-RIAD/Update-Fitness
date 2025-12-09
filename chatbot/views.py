@@ -57,7 +57,7 @@ class FitnessChatAPIView(APIView):
             return Response({"error": "Message is required."}, status=400)
         
 
-        result = get_profile_data(user)
+        result = get_meal_plan(user)
 
 
         # response = await chat(thread_id=user, user_message=user_message)
@@ -217,6 +217,7 @@ def get_workout_plan(user):
             daily_data["workouts"].append({
                 "id": entry.id,
                 "workout_name": entry.workout.workout_name if entry.workout else None,
+                "workout_exercise_type": entry.workout.exercise_type if entry.workout else None,
                 "series": entry.series,
                 "reps": entry.reps,
                 "rest": entry.rest,
