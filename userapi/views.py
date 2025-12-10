@@ -465,6 +465,122 @@ class DailyMealwisedataget(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
+
+
+
+class AllWorkoutPlanGet(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'workout_plan_id',
+                openapi.IN_QUERY,
+                description="ID of the WorkoutPlan to retrieve",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+            openapi.Parameter(
+                'lean',
+                openapi.IN_QUERY,
+                description="Language code for translation (default: EN, supports ES)",
+                type=openapi.TYPE_STRING,
+                default='EN'
+            ),
+        ],
+        tags=['7 days Workout Plan Get API']
+    )
+    def get(self, request):
+        user = request.user
+        workout_plan_id = request.query_params.get("workout_plan_id")
+        lean = request.query_params.get("lean", "EN").upper()
+
+        if not workout_plan_id:
+            return Response(
+                {"error": "workout_plan_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+
+        try:
+            workout_plan = WorkoutPlan.objects.prefetch_related(
+                "daily_workouts__workouts__workout"
+            ).get(id=workout_plan_id, user=user)
+        except WorkoutPlan.DoesNotExist:
+            return Response(
+                {"error": "WorkoutPlan not found for this user."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        plan_data = []
+        total_workouts = 0
+        total_completed_workouts = 0
+        for daily in workout_plan.daily_workouts.all():
+            daily_data = {
+                "daily_workout_id": daily.id,
+                "date": daily.date,
+                "completed": daily.completed,
+                "workouts": []
+            }
+
+            for entry in daily.workouts.all():
+                if not entry.workout:
+                    continue
+
+                total_workouts += 1
+                if entry.completed:
+                    total_completed_workouts += 1
+
+                workout_name = (
+                    entry.workout.workout_name_spanish
+                    if lean == "ES" else entry.workout.workout_name
+                )
+
+                exercise_type = (
+                    entry.workout.exercise_type_spanish
+                    if lean == "ES" else entry.workout.exercise_type_spanish
+                )
+
+
+
+                image_url = (
+                    entry.workout.image.url
+                    if entry.workout.image and hasattr(entry.workout.image, "url")
+                    else None
+                )
+
+                daily_data["workouts"].append({
+                    "workout_entry_id": entry.id,
+                    "workout_id": entry.workout.id,
+                    "workout_name": workout_name,
+                    "exercise_type":exercise_type,
+                    "series": entry.series,
+                    "reps": entry.reps,
+                    "rest": entry.rest,
+                    "completed": entry.completed,
+                    "image": image_url,
+                })
+
+            plan_data.append(daily_data)
+
+        response_data = {
+            "status": {
+                "days": workout_plan.daily_workouts.count(),
+                "total_workout": total_workouts,
+                "total_completed_workout": total_completed_workouts
+            },
+            "daily_workouts": plan_data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+        
+
+        
+
+
+
+
+
     
 
 

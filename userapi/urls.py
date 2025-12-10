@@ -2,7 +2,7 @@ from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from workoutplan.views import GenarateWorkoutPlan
 from mealplan.views import GenerateMealPlan
-from .views import GetHomePageData,GenaratPageData,AllMealPlanGet,DailyMealwisedataget
+from .views import GetHomePageData,GenaratPageData,AllMealPlanGet,DailyMealwisedataget,AllWorkoutPlanGet
 from chatbot.views import FitnessChatAPIView
 
 
@@ -20,4 +20,5 @@ urlpatterns = [
     path('generate-page/', GenaratPageData.as_view(), name='generate-page'),
     path('mealplan/15days/', AllMealPlanGet.as_view(), name='mealplan-15days'),
     path('daily-meal-data/', DailyMealwisedataget.as_view(), name='daily-meal-data'),
+    path('workoutplan/7days/', AllWorkoutPlanGet.as_view(), name='workout-plan-details'),
 ]
