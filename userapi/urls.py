@@ -2,7 +2,7 @@ from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from workoutplan.views import GenarateWorkoutPlan
 from mealplan.views import GenerateMealPlan
-from .views import GetHomePageData,GenaratPageData,AllMealPlanGet,DailyMealwisedataget,AllWorkoutPlanGet,DailyWorkoutwisedataget,SingleMealSlotEntryGet,SingleWorkoutEntryGet,TodaysMealPlanGet,TodaysWorkoutPlanGet,UpdateTodayMealEntryStatus,UpdateWorkoutEntryStatus
+from .views import GetHomePageData,GenaratPageData,AllMealPlanGet,DailyMealwisedataget,AllWorkoutPlanGet,DailyWorkoutwisedataget,SingleMealSlotEntryGet,SingleWorkoutEntryGet,TodaysMealPlanGet,TodaysWorkoutPlanGet,UpdateTodayMealEntryStatus,UpdateWorkoutEntryStatus,MealPlanCongratulations,WorkoutPlanCongratulations
 from chatbot.views import FitnessChatAPIView
 
 
@@ -28,4 +28,6 @@ urlpatterns = [
     path('todays-workout-plan/', TodaysWorkoutPlanGet.as_view(), name='todays-workout-plan'),
     path('meals/entry/update/', UpdateTodayMealEntryStatus.as_view(), name='update-meal-entry'),
     path('workouts/update-entry/<int:workout_entry_id>/',UpdateWorkoutEntryStatus.as_view(),name='update_workout_entry_status'),
+    path("meal-plan/congratulations/", MealPlanCongratulations.as_view(),name="meal-congratulations"),
+    path('workout-plan/congratulations/',WorkoutPlanCongratulations.as_view(),name='workout-plan-congratulations'),
 ]

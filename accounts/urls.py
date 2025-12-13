@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from .views import RegisterApiView,LoginAPIView,CustomTokenRefreshView,ProfileUpdateAPIView,ProfileRetrieveAPIView
-
+from subscription.views import PublicPackageListView
 
 
 
@@ -16,5 +16,6 @@ urlpatterns = [
     path('login/', LoginAPIView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('profile/update', ProfileUpdateAPIView.as_view(), name='profile'),  
-    path('profile/', ProfileRetrieveAPIView.as_view(), name='profile-get'),
+    path('profile/', ProfileRetrieveAPIView.as_view(), name='profile-get'),\
+    path('packages/', PublicPackageListView.as_view(), name='public-package-list'),
 ]

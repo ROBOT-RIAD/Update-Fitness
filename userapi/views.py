@@ -1062,7 +1062,6 @@ class TodaysWorkoutPlanGet(APIView):
 
 
 
-
 class UpdateTodayMealEntryStatus(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -1150,7 +1149,6 @@ class UpdateTodayMealEntryStatus(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
 
 
 
@@ -1247,5 +1245,188 @@ class UpdateWorkoutEntryStatus(APIView):
             status=status.HTTP_200_OK,
         )
     
-    
+
+
+
+class MealPlanCongratulations(APIView):
+    permission_classes= [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Get summary of the user's most recent completed meal plan.",
+        manual_parameters=[
+            openapi.Parameter(
+                'lean',
+                openapi.IN_QUERY,
+                description="Language code for translation (default is 'EN')",
+                type=openapi.TYPE_STRING,
+                default='EN'
+            ),
+        ],
+        tags=["Meal Plan Summary"]
+    )
+
+    def get(self, request):
+        user = request.user
+        lean = request.GET.get("lean", "EN").upper()
+        meal_plan = MealPlan.objects.filter(
+            user = user,
+            is_completed = True
+        ).order_by("-end_date").first()
+
+        if not meal_plan:
+            return Response(
+                {"message": "No completed meal plan found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if lean == "EN":
+            final_name = meal_plan.meal_plan_name
+        else:
+            final_name = meal_plan.meal_plan_name_spanish or meal_plan.meal_plan_name
+        
+
+        daily_meals = meal_plan.daily_meals.all()
+
+        total_days = daily_meals.count()
+        completed_days = daily_meals.filter(completed=True).count()
+        uncompleted_days = total_days - completed_days
+
+        completed_percentage = (
+            (completed_days / total_days) * 100 if total_days > 0 else 0
+        )
+
+        all_entries = MealSlotEntry.objects.filter(
+            meal_slot__daily_meal__meal_plan=meal_plan
+        )
+
+        total_calories = sum(all_entries.values_list("calories", flat=True))
+        total_protein = sum(all_entries.values_list("protein_g", flat=True))
+        total_fat = sum(all_entries.values_list("fat_g", flat=True))
+        total_carbs = sum(all_entries.values_list("carbs_g", flat=True))
+
+        completed_entries = all_entries.filter(completed=True)
+
+        completed_total_calories = sum(completed_entries.values_list("calories", flat=True))
+        completed_total_protein = sum(completed_entries.values_list("protein_g", flat=True))
+        completed_total_fat = sum(completed_entries.values_list("fat_g", flat=True))
+        completed_total_carbs = sum(completed_entries.values_list("carbs_g", flat=True))
+
+        total_meals = all_entries.count()
+        completed_meals = completed_entries.count()
+        uncompleted_meals = total_meals - completed_meals
+
+        data = {
+            "meal_plan_id": meal_plan.id,
+            "meal_plan_name": final_name,
+            "start_date": meal_plan.start_date,
+            "end_date": meal_plan.end_date,
+
+            # ✔ Meal counts
+            "total_completed_meal": completed_meals,
+            "total_uncompleted_meal": uncompleted_meals,
+
+            # ✔ Day counts
+            "total_completed_days": completed_days,
+            "total_uncompleted_days": uncompleted_days,
+
+            # ✔ Percentage
+            "completed_progress_percentage": round(completed_percentage, 2),
+
+            # ✔ Totals
+            "total_calories": total_calories,
+            "total_protein": total_protein,
+            "total_fat": total_fat,
+            "total_carbs": total_carbs,
+
+            # ✔ Completed totals
+            "completed_total_calories": completed_total_calories,
+            "completed_total_protein": completed_total_protein,
+            "completed_total_fat": completed_total_fat,
+            "completed_total_carbs": completed_total_carbs,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+
+class WorkoutPlanCongratulations(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Get summary of the user's most recent completed workout plan.",
+        manual_parameters=[
+            openapi.Parameter(
+                'lean',
+                openapi.IN_QUERY,
+                description="Language code for translation (default is 'EN')",
+                type=openapi.TYPE_STRING,
+                default='EN'
+            ),
+        ],
+        tags=["Workout Plan Summary"]
+    )
+    def get(self, request):
+        user = request.user
+        lean = request.GET.get("lean", "EN").upper()
+
+        workout_plan = WorkoutPlan.objects.filter(
+            user=user,
+            is_completed=True
+        ).order_by("-end_date").first()
+
+        if not workout_plan:
+            return Response(
+                {"message": "No completed workout plan found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        workout_plan_name = (
+            workout_plan.workout_plan_name
+            if lean == "EN"
+            else workout_plan.workout_plan_name_spanish
+        )
+
+        daily_workouts = workout_plan.daily_workouts.all()
+        total_days = daily_workouts.count()
+        completed_days = daily_workouts.filter(completed=True).count()
+        uncompleted_days = total_days - completed_days
+
+        completed_percentage = (
+            (completed_days / total_days) * 100 if total_days > 0 else 0
+        )
+
+        all_entries = WorkoutEntry.objects.filter(
+            daily_workout__workout_plan=workout_plan
+        )
+
+        total_workouts = all_entries.count()
+        completed_workouts = all_entries.filter(completed=True).count()
+        uncompleted_workouts = total_workouts - completed_workouts
+
+        data = {
+            "workout_plan_id": workout_plan.id,
+            "workout_plan_name": workout_plan_name,
+            "start_date": workout_plan.start_date,
+            "end_date": workout_plan.end_date,
+
+            "total_completed_workout": completed_workouts,
+            "total_uncompleted_workout": uncompleted_workouts,
+
+            "total_completed_days": completed_days,
+            "total_uncompleted_days": uncompleted_days,
+
+            "completed_progress_percentage": round(completed_percentage, 2),
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+
+
 

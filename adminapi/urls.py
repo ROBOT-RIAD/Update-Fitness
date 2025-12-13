@@ -2,11 +2,12 @@ from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from workout.views import AdminWorkoutBulkUploadAPIView, AdminWorkoutCreateAPIView,AdminWorkoutUpdateAPIView,AdminWorkoutListAPIView,AdminWorkoutRetrieveAPIView,AdminWorkoutDeleteAPIView
 from meal.views import AdminMealBulkUploadAPIView, AdminMealRetrieveAPIView, AdminMealcreateApiview,AdminMealUpdateApiview,AdminMealDeleteAPIView,AdminMealListAPIView
-
+from subscription.views import PackageViewSet
 
 
 
 router = DefaultRouter()
+router.register('packages', PackageViewSet)
 
 
 

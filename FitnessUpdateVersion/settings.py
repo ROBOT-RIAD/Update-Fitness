@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     'workoutplan',
     'meal',
     'mealplan',
-    'chatbot'
+    'chatbot',
+    'subscription'
 ]
 
 MIDDLEWARE = [
