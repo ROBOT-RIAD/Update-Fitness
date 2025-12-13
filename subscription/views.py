@@ -38,6 +38,7 @@ class PackageViewSet(viewsets.ModelViewSet):
     serializer_class = PackageSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
+    pagination_class = None
 
     def perform_create(self, serializer):
         data = serializer.validated_data

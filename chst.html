@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitness AI Assistant</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 800px;
+      height: 90vh;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    .chat-header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #f8f9fa;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .message.user .message-content {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.bot .message-content {
+      background: white;
+      color: #333;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .message-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin: 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+    }
+
+    .message.user .message-avatar {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      order: 2;
+    }
+
+    .message.bot .message-avatar {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+    }
+
+    .typing-indicator {
+      display: none;
+      padding: 20px;
+      color: #666;
+      font-style: italic;
+    }
+
+    .chat-input-container {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #e9ecef;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e9ecef;
+      border-radius: 25px;
+      outline: none;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    .chat-input:focus {
+      border-color: #007bff;
+    }
+
+    .send-button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .send-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    }
+
+    .send-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      border-radius: 20px;
+      color: white;
+      font-weight: 500;
+      display: none;
+    }
+
+    .status.success {
+      background: #4CAF50;
+    }
+
+    .status.error {
+      background: #f44336;
+    }
+
+    @media (max-width: 768px) {
+      .chat-container {
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .chat-messages {
+        padding: 15px;
+      }
+
+      .message-content {
+        max-width: 85%;
+      }
+
+      .chat-input-container {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h1>🏋️ Fitness AI Assistant</h1>
+      <p>Your personal fitness and nutrition guide</p>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="message bot">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          Hello! I'm your AI fitness assistant. I can help you with workout plans, meal planning, and fitness advice. What would you like to know today?
+        </div>
+      </div>
+    </div>
+
+    <div class="typing-indicator" id="typingIndicator">
+      AI is typing...
+    </div>
+
+    <div class="chat-input-container">
+      <input type="text" id="messageInput" class="chat-input" placeholder="Ask me about fitness, workouts, or nutrition..." />
+      <button id="sendButton" class="send-button">Send</button>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <script>
+    const chatMessages = document.getElementById("chatMessages");
+    const messageInput = document.getElementById("messageInput");
+    const sendButton = document.getElementById("sendButton");
+    const typingIndicator = document.getElementById("typingIndicator");
+    const statusDiv = document.getElementById("status");
+
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY1NjIzMDQ0LCJpYXQiOjE3NjU2MDg2NDQsImp0aSI6IjdhNmQxNzk3MmIyMjRkNjA4ODU3YTQ4YmVlN2IyYTVjIiwidXNlcl9pZCI6IjMiLCJpZCI6MywiZW1haWwiOiJyaWFkNDIwQGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIn0.QWjUBdyene40QVWgdrctx4ce7h4OKDR1a1zs6Gmpm9s";
+
+    let isTyping = false;
+
+    function showStatus(message, type = 'success') {
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+      statusDiv.style.display = 'block';
+      setTimeout(() => {
+        statusDiv.style.display = 'none';
+      }, 3000);
+    }
+
+    function addMessage(content, isUser = false) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = isUser ? '👤' : '🤖';
+
+      const messageContent = document.createElement('div');
+      messageContent.className = 'message-content';
+      messageContent.textContent = content;
+
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(messageContent);
+
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function setTyping(typing) {
+      isTyping = typing;
+      typingIndicator.style.display = typing ? 'block' : 'none';
+      sendButton.disabled = typing;
+      messageInput.disabled = typing;
+
+      if (typing) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+    }
+
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || isTyping) return;
+
+      addMessage(text, true);
+      messageInput.value = '';
+      setTyping(true);
+
+      try {
+        const response = await fetch("http://10.10.13.26:8001/userapi/stream-chat/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({ message: text })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let botMessage = '';
+        let messageDiv = null;
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          botMessage += chunk;
+
+          // Create or update the bot message
+          if (!messageDiv) {
+            messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+          }
+
+          const messageContent = messageDiv.querySelector('.message-content');
+          messageContent.textContent = botMessage;
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        showStatus('Message sent successfully!', 'success');
+
+      } catch (error) {
+        console.error('Error:', error);
+        addMessage('Sorry, I encountered an error. Please try again.', false);
+        showStatus('Failed to send message', 'error');
+      } finally {
+        setTyping(false);
+      }
+    }
+
+    // Event listeners
+    sendButton.addEventListener('click', sendMessage);
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Focus input on load
+    window.addEventListener('load', () => {
+      messageInput.focus();
+    });
+
+    // Show welcome message
+    showStatus('Connected to AI Assistant', 'success');
+  </script>
+</body>
+</html>

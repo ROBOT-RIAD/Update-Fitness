@@ -15,7 +15,6 @@ class Package(models.Model):
     interval_count = models.IntegerField(default=1, help_text="Number of intervals (e.g., every 6 months = 6)")
     price_id = models.CharField(max_length=255, blank=True, null=True)
     product_id = models.CharField(max_length=255, blank=True, null=True)
-    vapi_minutes = models.IntegerField(default=0,blank=True, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
 
     def __str__(self):

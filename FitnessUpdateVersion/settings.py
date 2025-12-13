@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'meal',
     'mealplan',
     'chatbot',
-    'subscription'
+    'subscription',
 ]
 
 MIDDLEWARE = [
@@ -87,6 +87,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'FitnessUpdateVersion.wsgi.application'
+# ASGI_APPLICATION= 'FitnessUpdateVersion.asgi.application'
 
 
 # Database
@@ -177,6 +178,7 @@ STRIPE_WEBHOOK_SECRET=os.getenv('STRIPE_WEBHOOK_SECRET')
 
 #Swagger 
 SWAGGER_SETTINGS = {
+    # 'DEFAULT_API_URL': 'https://api.trusttaste.ai',
     'SECURITY_DEFINITIONS': {
         'Bearer': {
             'type': 'apiKey',

@@ -1,51 +1,93 @@
-# # chatbot/service.py
-# import os
-# import uuid
-# from dotenv import load_dotenv
-# from langchain.chat_models import init_chat_model
-# from langchain_core.messages import SystemMessage
-# from langgraph.graph import StateGraph, MessagesState, START
-# from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-# from django.conf import settings
+from langchain.chat_models import init_chat_model
+from langgraph_supervisor import create_supervisor
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+import os
+from dotenv import load_dotenv
+import datetime
+from .agents import workout_update_agent, meal_update_agent, get_profile
 
-# load_dotenv()
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
 
+model = init_chat_model(model="gpt-5-nano", api_key=api_key)
 
-# DB_URI = os.getenv("DB_URI") or getattr(settings, "DB_URI", None)
-# if not DB_URI:
-#     raise ValueError("❌ DB_URI not found in environment or settings.")
+DB_URI = os.getenv("DB_URI")
 
-# api_key = settings.OPENAI_API_KEY
-# model = init_chat_model(model="gpt-3.5-turbo", api_key=api_key)
+async def chat(user_id: str, user_message: str):
+    async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:  
+        await checkpointer.setup()
 
+        # Supervisor agent
+        supervisor = create_supervisor(
+            model=model,
+            tools=[get_profile],
+            agents=[meal_update_agent, workout_update_agent],
+            prompt=(
+            f"TODAY'S DATE: {datetime.date.today().strftime('%Y-%m-%d')} - Use this as reference for current date context.\n\n"
+            f"Here is the user_id:{user_id}. ALWAYS Remember it and forward it to the other agents"
+            "You are a fitness supervisor coordinating between meal and workout planning specialists. "
+            "Keep responses concise, precise and relevant.\n\n"
+            "DELEGATION RULES (MUST FOLLOW):\n"
+            "- MealUpdateAgent: ANY request about diet, nutrition, meal plans, recipes, food\n"
+            "- WorkoutUpdateAgent: ANY request about exercise, training, workout plans, fitness\n\n"
+            "CRITICAL: When user mentions ANY of these keywords about workouts or meals, you MUST IMMEDIATELY delegate:\n"
+            "- 'update', 'change', 'modify', 'adjust', 'create', 'suggest', 'missed', 'make up', 'reschedule'\n"
+            "- Do NOT ask clarifying questions - delegate FIRST, let the agent handle details\n"
+            "- Do NOT offer options yourself - delegate to the agent immediately\n\n"
+            "GUIDELINES:\n"
+            "- Respond directly ONLY for greetings, pleasantries, or general inquiries unrelated to planning\n"
+            "- For ANY workout/meal related request, delegate to the appropriate agent\n"
+            "- Don't ask for information already in the user's profile or plans\n"
+            "- For combined meal and workout requests, coordinate both agents\n"
+            "- Prioritize user safety with balanced recommendations"
+            ),
+            output_mode="last_message",
+        ).compile(checkpointer=checkpointer)
 
-# async def chat(thread_id: str, user_message: str):
-#     async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:  
-#         await checkpointer.setup()
-
-#         async def call_model(state: MessagesState):
-#             system_msg = SystemMessage("You are a fitness expert specializing in creating personalized workout and meal plans. Provide suggestions based on user preferences, fitness levels, and goals. Don't include any out of the context information. Be concise and to the point.")
-#             response = await model.ainvoke([system_msg] + state["messages"])
-#             return {"messages": response}
-
-#         builder = StateGraph(MessagesState)
-#         builder.add_node(call_model)
-#         builder.add_edge(START, "call_model")
-
-#         graph = builder.compile(checkpointer=checkpointer)  
-
-#         config = {
-#             "configurable": {
-#                 "thread_id": thread_id
-#             }
-#         }
+        config = {
+            "configurable": {
+                "thread_id": user_id
+            }
+        }
         
-#         messages = []
-#         async for chunk in graph.astream(
-#             {"messages": [{"role": "user", "content": user_message}]},
-#             config,  
-#             stream_mode="values"
-#         ):
-#             messages = chunk["messages"]
+        async for event in supervisor.astream_events(
+            {"messages": [{"role": "user", "content": user_message}]},
+            config,
+            version="v2",
+        ):
+            if event["event"] == "on_chat_model_stream":
+                chunk = event["data"]["chunk"]
+                if hasattr(chunk, "content") and chunk.content:
+                    checkpoint_ns = event["metadata"].get("checkpoint_ns", "")
+                    if checkpoint_ns.startswith("supervisor"):
+                        yield chunk.content
+
+
+
+
+
+
         
-#         return messages[-1] if messages else None
+if __name__ == "__main__":
+    import asyncio
+    import sys
+
+    user_id = "a4f65adddasaaaaaaaaaaaaa4"  
+
+    print("Chatbot ready. Type your messages below (Ctrl+C or 'quit' to exit).")
+    try:
+        while True:
+            user_input = input("Human> ").strip()
+            if user_input.lower() in ("quit", "exit", "q"):
+                print("Goodbye!")
+                break
+            if user_input:
+                print("AI > ", end="", flush=True)
+                async def stream_response():
+                    async for token in chat(user_id=user_id, user_message=user_input):
+                        print(token, end="", flush=True)
+                    print()  # New line after response
+                asyncio.run(stream_response())
+    except KeyboardInterrupt:
+        print("\nGoodbye!")
+        sys.exit(0)
